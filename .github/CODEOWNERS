@@ -1,0 +1,29 @@
+# Code owners are automatically requested for review when someone opens a pull request
+# that modifies code they own. See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything in the repo
+*                       @mclock/maintainers
+
+# Application target
+/mclock/                @mclock/app-team
+
+# Core library
+/mclockCore/            @mclock/core-team
+
+# Tests
+/mclockTests/           @mclock/core-team
+/mclockUITests/         @mclock/app-team
+
+# Documentation
+*.md                    @mclock/maintainers
+/docs/                  @mclock/maintainers
+
+# CI/CD
+/.github/               @mclock/maintainers
+
+# Examples
+/examples/              @mclock/core-team
+
+# Configuration
+.swiftlint.yml          @mclock/maintainers
+.swiftformat            @mclock/maintainers

@@ -1,0 +1,10 @@
+{
+  "id": "com.example.pomodoro",
+  "name": "Pomodoro Timer",
+  "version": "1.0.0",
+  "author": "mclock contributors",
+  "description": "Integrates a Pomodoro work timer with the menu bar clock display.",
+  "minimumMClockVersion": "0.5.0",
+  "permissions": ["clock", "notifications"],
+  "main": "PomodoroPlugin"
+}

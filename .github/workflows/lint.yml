@@ -1,0 +1,67 @@
+name: Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  swiftlint:
+    name: SwiftLint
+    runs-on: macos-14
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install SwiftLint
+        run: brew install swiftlint
+
+      - name: Run SwiftLint
+        run: |
+          if find . -name "*.swift" -not -path "./.build/*" | grep -q .; then
+            swiftlint --strict --reporter github-actions-logging
+          else
+            echo "No Swift files found yet — SwiftLint will enforce once source code is added."
+          fi
+
+  swiftformat:
+    name: SwiftFormat
+    runs-on: macos-14
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install SwiftFormat
+        run: brew install swiftformat
+
+      - name: Run SwiftFormat (lint mode)
+        run: |
+          if find . -name "*.swift" -not -path "./.build/*" | grep -q .; then
+            swiftformat --lint .
+          else
+            echo "No Swift files found yet — SwiftFormat will enforce once source code is added."
+          fi
+
+  markdown-lint:
+    name: Markdown Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check markdown links
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          use-quiet-mode: yes
+          config-file: .github/markdown-link-check-config.json

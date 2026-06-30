@@ -1,0 +1,80 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: macos-14
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app
+
+      - name: Run Unit Tests
+        run: |
+          if [ -d "mclock.xcodeproj" ] || [ -d "mclock.xcworkspace" ]; then
+            xcodebuild test \
+              -scheme mclock \
+              -configuration Debug \
+              -destination 'platform=macOS' \
+              -only-testing:mclockTests \
+              CODE_SIGNING_ALLOWED=NO \
+              -resultBundlePath TestResults.xcresult \
+              | xcpretty || exit ${PIPESTATUS[0]}
+          else
+            echo "::warning::Xcode project not found. Unit tests will run once mclock.xcodeproj is added."
+          fi
+
+      - name: Upload test results
+        if: always() && hashFiles('TestResults.xcresult') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: TestResults.xcresult
+
+  ui-tests:
+    name: UI Tests
+    runs-on: macos-14
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app
+
+      - name: Run UI Tests
+        run: |
+          if [ -d "mclock.xcodeproj" ] || [ -d "mclock.xcworkspace" ]; then
+            xcodebuild test \
+              -scheme mclock \
+              -configuration Debug \
+              -destination 'platform=macOS' \
+              -only-testing:mclockUITests \
+              CODE_SIGNING_ALLOWED=NO \
+              -resultBundlePath UITestResults.xcresult \
+              | xcpretty || exit ${PIPESTATUS[0]}
+          else
+            echo "::warning::Xcode project not found. UI tests will run once mclock.xcodeproj is added."
+          fi
+
+      - name: Upload UI test results
+        if: always() && hashFiles('UITestResults.xcresult') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-test-results
+          path: UITestResults.xcresult

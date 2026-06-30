@@ -1,0 +1,85 @@
+name: mclock
+options:
+  bundleIdPrefix: dev.mclock
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "15.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+
+targets:
+  mclockCore:
+    type: framework
+    platform: macOS
+    sources:
+      - path: mclockCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.mclock.core
+        GENERATE_INFOPLIST_FILE: YES
+        DEFINES_MODULE: YES
+        CODE_SIGNING_ALLOWED: NO
+
+  mclock:
+    type: application
+    platform: macOS
+    sources:
+      - path: mclock
+    dependencies:
+      - target: mclockCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.mclock.app
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_LSUIElement: YES
+        CODE_SIGNING_ALLOWED: NO
+
+  mclockTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: mclockTests
+    dependencies:
+      - target: mclockCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.mclock.tests
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGNING_ALLOWED: NO
+
+  mclockUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - path: mclockUITests
+    dependencies:
+      - target: mclock
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.mclock.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGNING_ALLOWED: NO
+
+schemes:
+  mclock:
+    build:
+      targets:
+        mclock: all
+        mclockCore: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - mclockTests
+        - mclockUITests
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release

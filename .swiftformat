@@ -1,0 +1,20 @@
+# SwiftFormat configuration for mclock
+# See: https://github.com/nicklockwood/SwiftFormat
+
+--swiftversion 5.9
+--indent 4
+--maxwidth 120
+--wraparguments before-first
+--wrapparameters before-first
+--wrapcollections before-first
+--trimwhitespace always
+--commas always
+--semicolons never
+--stripunusedargs always
+--self remove
+--importgrouping testable-bottom
+--extensionacl on-declarations
+--redundanttype inferred
+--ifdef no-indent
+
+--exclude .build,DerivedData,Carthage,Pods,.spm

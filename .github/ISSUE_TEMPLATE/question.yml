@@ -1,0 +1,41 @@
+name: Question
+description: Ask a question about mclock
+title: "[Question]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a question about mclock? Ask here. For bug reports, use the Bug Report template instead.
+
+        Also check the [FAQ](https://github.com/mclock/mclock/blob/main/FAQ.md) — your question may already be answered.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: What would you like to know?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - Installation / Setup
+        - Usage
+        - Development / Contributing
+        - Architecture
+        - Plugins / Extensibility
+        - Other
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I checked the FAQ and existing issues
+          required: true

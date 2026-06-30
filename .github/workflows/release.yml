@@ -1,0 +1,179 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v0.2.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    name: Validate Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Release version: ${VERSION}"
+
+      - name: Validate semver format
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          if ! echo "$VERSION" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Invalid version format: $VERSION (expected vX.Y.Z)"
+            exit 1
+          fi
+
+  build-and-test:
+    name: Build & Test
+    needs: validate
+    runs-on: macos-14
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app
+
+      - name: Build Release
+        run: |
+          if [ -d "mclock.xcodeproj" ] || [ -d "mclock.xcworkspace" ]; then
+            xcodebuild build \
+              -scheme mclock \
+              -configuration Release \
+              -destination 'platform=macOS' \
+              CODE_SIGNING_ALLOWED=NO
+          else
+            echo "::warning::Xcode project not found. Release binary will be available once the app is implemented."
+          fi
+
+      - name: Run all tests
+        run: |
+          if [ -d "mclock.xcodeproj" ] || [ -d "mclock.xcworkspace" ]; then
+            xcodebuild test \
+              -scheme mclock \
+              -configuration Release \
+              -destination 'platform=macOS' \
+              CODE_SIGNING_ALLOWED=NO
+          fi
+
+  changelog:
+    name: Generate Changelog
+    needs: [validate, build-and-test]
+    runs-on: ubuntu-latest
+    outputs:
+      changelog: ${{ steps.changelog.outputs.changelog }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog for this release
+        id: changelog
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          VERSION_HEADER="## ${VERSION}"
+
+          if grep -q "^${VERSION_HEADER}" CHANGELOG.md; then
+            CHANGELOG=$(awk "/^${VERSION_HEADER}/{flag=1; next} /^## v/{flag=0} flag" CHANGELOG.md)
+          else
+            PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+            if [ -n "$PREV_TAG" ]; then
+              CHANGELOG=$(git log "${PREV_TAG}..HEAD" --pretty=format:"- %s (%h)" --no-merges)
+            else
+              CHANGELOG="Initial release."
+            fi
+          fi
+
+          echo "changelog<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$CHANGELOG" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+  release:
+    name: Create GitHub Release
+    needs: [validate, build-and-test, changelog]
+    runs-on: macos-14
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build release archive
+        run: |
+          if [ -d "mclock.xcodeproj" ] || [ -d "mclock.xcworkspace" ]; then
+            xcodebuild build \
+              -scheme mclock \
+              -configuration Release \
+              -destination 'platform=macOS' \
+              -archivePath build/mclock.xcarchive \
+              archive \
+              CODE_SIGNING_ALLOWED=NO
+
+            APP_PATH=$(find build/mclock.xcarchive -name "*.app" -maxdepth 3 | head -1)
+            if [ -n "$APP_PATH" ]; then
+              mkdir -p dist
+              ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "dist/mclock-${{ needs.validate.outputs.version }}.zip"
+            fi
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.validate.outputs.version }}
+          name: mclock ${{ needs.validate.outputs.version }}
+          body: |
+            ## mclock ${{ needs.validate.outputs.version }}
+
+            ${{ needs.changelog.outputs.changelog }}
+
+            ---
+
+            ### Installation
+
+            Download the `.zip` below, extract, and move `mclock.app` to your Applications folder.
+
+            ### Full Changelog
+
+            See [CHANGELOG.md](https://github.com/mclock/mclock/blob/main/CHANGELOG.md) for the complete version history.
+          files: |
+            dist/*.zip
+          draft: false
+          prerelease: ${{ contains(needs.validate.outputs.version, '-rc') || startsWith(needs.validate.outputs.version, 'v0.') }}
+          generate_release_notes: true
+
+      - name: Update CHANGELOG.md version header
+        if: github.event_name == 'push'
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          if grep -q "^\[Unreleased\]" CHANGELOG.md; then
+            sed -i '' "s/^\[Unreleased\]/[Unreleased]\n\n---\n\n## ${VERSION}/" CHANGELOG.md
+          fi
+
+      - name: Commit changelog update
+        if: github.event_name == 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git diff --staged --quiet || git commit -m "docs(changelog): release ${{ needs.validate.outputs.version }}"
+          git push || echo "Changelog update push skipped (may require permissions)"

@@ -1,0 +1,9 @@
+# Default issue template selector
+blank_issues_enabled: false
+contact_links:
+  - name: Question
+    url: https://github.com/mclock/mclock/issues/new?template=question.yml
+    about: Ask a question about mclock
+  - name: Security Vulnerability
+    url: https://github.com/mclock/mclock/blob/main/SECURITY.md
+    about: Report a security vulnerability privately

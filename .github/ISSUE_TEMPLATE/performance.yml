@@ -1,0 +1,89 @@
+name: Performance Issue
+description: Report a performance problem
+title: "[Performance]: "
+labels: ["performance", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Report performance issues such as high CPU usage, memory leaks, or slow UI.
+
+  - type: dropdown
+    id: version
+    attributes:
+      label: mclock Version
+      options:
+        - v0.1.0
+        - v0.2.0
+        - v0.3.0
+        - main (development)
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS Version
+      placeholder: "macOS 14.5"
+    validations:
+      required: true
+
+  - type: input
+    id: hardware
+    attributes:
+      label: Hardware
+      description: Mac model and chip (e.g., MacBook Pro M3)
+      placeholder: "MacBook Pro 14\" M3 Pro"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Performance Issue Description
+      description: Describe the performance problem.
+      placeholder: "CPU usage stays at 80% even when idle"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: How to trigger the performance issue.
+    validations:
+      required: true
+
+  - type: textarea
+    id: metrics
+    attributes:
+      label: Metrics
+      description: |
+        Relevant metrics from Activity Monitor or Instruments.
+        Include CPU %, memory usage, energy impact if available.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected Area
+      options:
+        - Menu Bar (CPU while idle)
+        - Lock Screen (slow overlay)
+        - Authentication (slow unlock)
+        - Settings (slow to open)
+        - App Launch (slow startup)
+        - Memory (leak or high usage)
+        - Other
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues to avoid duplicates
+          required: true
+        - label: I tested with a fresh install / no plugins
+          required: true
